@@ -414,3 +414,109 @@ def test_checkout_returns_expected_fields_and_updates_availability(client):
     equip_data = check_equipment.get_json()
     assert equip_data["available_units"] == 0
 
+
+# TESTS FOR RETURNING EQUIPMENT: TODO
+
+def test_return_fails_without_rental_id(client):
+    response = client.put("/rentals/return")
+    assert response.status_code == 404
+
+
+def test_return_fails_if_rental_does_not_exist(client):
+    response = client.put("/rentals/1/return")
+    assert response.status_code == 404
+    assert response.get_json() == {"error": "Rental not found"}
+
+
+def test_return_fails_if_rental_has_already_been_returned(client):
+    
+    # create renter and equipment
+
+    renter_payload = {
+        "name": "renter",
+        "email": "renter@renter.com",
+    }
+    renter_resp = client.post("/renters", json=renter_payload)
+    assert renter_resp.status_code == 201
+    renter_id = renter_resp.get_json()["id"]
+
+    equipment_payload = {
+            "name": "item",
+            "category": "test",
+            "total_units": 1,
+            "is_available": True
+        }
+    equipment_resp = client.post("/equipment", json=equipment_payload)
+    assert equipment_resp.status_code == 201
+    equipment_id = equipment_resp.get_json()["id"]
+
+    # create rental
+
+    rental_response = client.post(
+        "/rentals",
+        json={
+            "renter_id": renter_id,
+            "equipment_id": equipment_id,
+        },
+    )
+    assert rental_response.status_code == 201
+    rental_id = rental_response.get_json()["id"]
+
+    # attempt to return rental twice
+
+    first_return = client.put(f"/rentals/{rental_id}/return")
+    assert first_return.status_code == 200
+
+    second_return = client.put(f"/rentals/{rental_id}/return")
+    assert second_return.status_code == 400
+    assert second_return.get_json() == {"error": "Rental already returned"}
+
+
+def test_return_updates_return_date_and_increments_available_units_by_one(client):
+    
+    # create renter and equipment
+
+    renter_payload = {
+        "name": "renter",
+        "email": "renter@renter.com",
+    }
+    renter_resp = client.post("/renters", json=renter_payload)
+    assert renter_resp.status_code == 201
+    renter_id = renter_resp.get_json()["id"]
+
+    equipment_payload = {
+            "name": "item",
+            "category": "test",
+            "total_units": 1,
+            "is_available": True
+        }
+    equipment_resp = client.post("/equipment", json=equipment_payload)
+    assert equipment_resp.status_code == 201
+    equipment_id = equipment_resp.get_json()["id"]
+
+    # create rental
+
+    rental_response = client.post(
+        "/rentals",
+        json={
+            "renter_id": renter_id,
+            "equipment_id": equipment_id,
+        },
+    )
+    assert rental_response.status_code == 201
+    rental_id = rental_response.get_json()["id"]
+
+    # check rental has updated availability 
+    og_availability_resp = client.get(f"/equipment/{equipment_id}/availability")
+    og_availability = og_availability_resp.get_json()["available_units"]
+    assert og_availability == 0
+
+    # return rental & check return date
+    response = client.put(f"/rentals/{rental_id}/return")
+    assert response.status_code == 200
+    assert response.get_json()["return_date"] == date.today().isoformat()
+
+    # check return has updated availability
+    new_availability_resp = client.get(f"/equipment/{equipment_id}/availability")
+    new_availability = new_availability_resp.get_json()["available_units"]
+    assert new_availability == 1
