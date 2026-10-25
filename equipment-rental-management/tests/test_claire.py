@@ -421,12 +421,10 @@ def test_return_fails_without_rental_id(client):
     response = client.put("/rentals/return")
     assert response.status_code == 404
 
-
 def test_return_fails_if_rental_does_not_exist(client):
     response = client.put("/rentals/1/return")
     assert response.status_code == 404
     assert response.get_json() == {"error": "Rental not found"}
-
 
 def test_return_fails_if_rental_has_already_been_returned(client):
     
@@ -470,7 +468,6 @@ def test_return_fails_if_rental_has_already_been_returned(client):
     second_return = client.put(f"/rentals/{rental_id}/return")
     assert second_return.status_code == 400
     assert second_return.get_json() == {"error": "Rental already returned"}
-
 
 def test_return_updates_return_date_and_increments_available_units_by_one(client):
     
