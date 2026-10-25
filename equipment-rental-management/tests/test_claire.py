@@ -2,11 +2,7 @@ from datetime import date, timedelta
 
 # TESTS FOR CHECKOUT
 
-# Input tests TODO:
-
-# test fails with invalid due_date/return date (<= rental date)
-
-# test fails with invalid deposit_amount ( <0 )
+# Input tests
 
 def test_checkout_fails_without_equipment_id(client):
     create_payload = {
@@ -88,7 +84,38 @@ def test_checkout_fails_if_renter_dne(client):
     response = client.post("/rentals", json=payload)
     assert response.status_code == 404
 
-# OTHER TESTS
+def test_checkout_fails_with_invalid_deposit_amount(client):
+    
+    # create renter and equipment
+    
+    renter_payload = {
+        "name": "renter",
+        "email": "renter@renter.com",
+    }
+    renter_resp = client.post("/renters", json=renter_payload)
+    assert renter_resp.status_code == 201
+    renter_id = renter_resp.get_json()["id"]
+
+    equipment_payload = {
+            "name": "item",
+            "category": "test",
+            "total_units": 1,
+            "is_available": True
+        }
+    equipment_resp = client.post("/equipment", json=equipment_payload)
+    assert equipment_resp.status_code == 201
+    equipment_id = equipment_resp.get_json()["id"]
+
+    # create rental
+    payload = {
+        "renter_id": renter_id,
+        "equipment_id": equipment_id,
+        "deposit_amount": -1.0
+    }
+    response = client.post("/rentals", json=payload)
+    assert response.status_code == 404
+
+# Other tests
 
 def test_checkout_requires_is_available_true(client):
     
@@ -189,6 +216,7 @@ def test_checkout_returns_expected_fields_and_updates_availability(client):
     payload = {
         "renter_id": renter_id,
         "equipment_id": equipment_id,
+        "deposit_amount": 100.0
     }
     response = client.post("/rentals", json=payload)
     assert response.status_code == 201
@@ -199,7 +227,7 @@ def test_checkout_returns_expected_fields_and_updates_availability(client):
     assert data["equipment_id"] == equipment_id
     assert data["rental_date"] == date.today().strftime('%Y-%m-%d')
     assert data["return_date"] == None
-    assert data["deposit_amount"] == 0.0
+    assert data["deposit_amount"] == 100.0
     assert data["deposit_released"] == False
 
     # check updated availaility
