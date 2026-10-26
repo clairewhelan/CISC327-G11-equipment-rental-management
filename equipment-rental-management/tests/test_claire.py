@@ -517,3 +517,106 @@ def test_return_updates_return_date_and_increments_available_units_by_one(client
     new_availability_resp = client.get(f"/equipment/{equipment_id}/availability")
     new_availability = new_availability_resp.get_json()["available_units"]
     assert new_availability == 1
+
+
+# TESTS FOR EXTENDING A RENTAL
+
+def test_extending_rental_fails_without_rental_id(client):
+    response = client.put("/rentals/extend")
+    assert response.status_code == 404
+
+def test_extending_rental_fails_if_rental_dne(client):
+    response = client.put("/rentals/1/extend")
+    assert response.status_code == 404
+    assert response.get_json() == {"error": "Rental not found"}
+
+def test_extending_rental_fails_if_equipment_already_returned(client):
+    # create renter and equipment
+    
+    renter_payload = {
+        "name": "renter",
+        "email": "renter@renter.com",
+    }
+    renter_resp = client.post("/renters", json=renter_payload)
+    assert renter_resp.status_code == 201
+    renter_id = renter_resp.get_json()["id"]
+
+    equipment_payload = {
+            "name": "item",
+            "category": "test",
+            "total_units": 1,
+            "is_available": True
+        }
+    equipment_resp = client.post("/equipment", json=equipment_payload)
+    assert equipment_resp.status_code == 201
+    equipment_id = equipment_resp.get_json()["id"]
+
+    # create rental
+
+    rental_response = client.post(
+        "/rentals",
+        json={
+            "renter_id": renter_id,
+            "equipment_id": equipment_id,
+        },
+    )
+    assert rental_response.status_code == 201
+    rental_id = rental_response.get_json()["id"]
+
+    # return rental
+
+    rental_return = client.put(f"/rentals/{rental_id}/return")
+    assert rental_return.status_code == 200
+
+    # attempt to extend rental
+
+    response = client.put(f"/rentals/{rental_id}/extend")
+    assert response.status_code == 400
+    assert response.get_json() == {"error": "Rental already returned"}
+
+def test_extending_rental_updates_due_date(client):
+    
+    # create renter and equipment
+    
+    renter_payload = {
+        "name": "renter",
+        "email": "renter@renter.com",
+    }
+    renter_resp = client.post("/renters", json=renter_payload)
+    assert renter_resp.status_code == 201
+    renter_id = renter_resp.get_json()["id"]
+
+    equipment_payload = {
+            "name": "item",
+            "category": "test",
+            "total_units": 1,
+            "is_available": True
+        }
+    equipment_resp = client.post("/equipment", json=equipment_payload)
+    assert equipment_resp.status_code == 201
+    equipment_id = equipment_resp.get_json()["id"]
+
+    # create rental
+
+    rental_response = client.post(
+        "/rentals",
+        json={
+            "renter_id": renter_id,
+            "equipment_id": equipment_id,
+        },
+    )
+    assert rental_response.status_code == 201
+    rental_id = rental_response.get_json()["id"]
+    og_rental_due_date = rental_response.get_json()["due_date"]
+
+    # extend rental
+
+    rental_extend = client.put(f"/rentals/{rental_id}/extend", json={"days": 2})
+    assert rental_extend.status_code == 200
+
+    # check rental due date
+    response = client.get(f"/rentals?equipment_id={equipment_id}")
+    due_date = response.get_json()[0]["due_date"]
+    expected_due_date = date.fromisoformat(og_rental_due_date) + timedelta(days=2)
+    assert date.fromisoformat(due_date) == expected_due_date
+
