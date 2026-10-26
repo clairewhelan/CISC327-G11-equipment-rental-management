@@ -1,9 +1,11 @@
-# TESTS ADDING NEW EQUIPMENT 
+# TESTS IF EQUIPMENT ENDPOINT EXISTS 
 
 def test_list_equipment_returns_empty_list_initially(client):
     response = client.get("/equipment")
     assert response.status_code == 200
     assert response.get_json() == []
+
+# TESTS ADDING NEW EQUIPMENT 
 
 def test_create_equipment_and_check_created(client): 
     payload = {
