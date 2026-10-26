@@ -473,3 +473,57 @@ def test_delete_renter_that_has_not_returned_equipment(client):
     assert rental_check.status_code == 200
     assert len(rental_check.get_json()) == 1
 
+# TESTS EDITING/UPDATING RENTERS 
+
+def test_edit_existing_renter(client):
+    payload = {
+        "name": "test",
+        "email": "test@gmail.com"
+    }
+    renter_resp = client.post("/renters", json=payload)
+    assert renter_resp.status_code == 201
+    renter_id = renter_resp.get_json()["id"]
+
+    updated_payload = {
+        "name": "John",
+        "email": "john@gmail.com"
+    }
+    update_renter_resp = client.put(f"/renters/{renter_id}", json=updated_payload)
+    assert update_renter_resp.status_code == 200
+
+    renter_data = update_renter_resp.get_json()
+    assert renter_data["id"] == renter_id
+    assert renter_data["name"] == "John"
+    assert renter_data["email"] == "john@gmail.com"
+
+def test_edit_renter_that_dne(client):
+    updated_payload = {
+        "name": "John",
+        "email": "john@gmail.com"
+    }
+    update_renter_resp = client.put(f"/renters/{9999999}", json=updated_payload)
+    assert update_renter_resp.status_code == 404
+   
+def test_edit_renter_email_w_non_email(client):
+    # Create renter with a valid email
+    payload_renter = {
+        "name": "test",
+        "email": "test@gmail.com",
+    }
+    renter_resp = client.post("/renters", json=payload_renter)
+    assert renter_resp.status_code == 201
+    renter_id = renter_resp.get_json()["id"]
+
+    # Attempt to update renter with an invalid email
+    payload_update = {
+        "email": "something",
+    }
+    update_resp = client.put(f"/renters/{renter_id}", json=payload_update)
+
+    # Invalid email should be rejected
+    assert update_resp.status_code == 400
+
+    # Verify the original email remains unchanged
+    renter_check = client.get(f"/renters/{renter_id}")
+    assert renter_check.status_code == 200
+    assert renter_check.get_json()["email"] == "renter1@example.com"
