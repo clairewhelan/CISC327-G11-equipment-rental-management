@@ -202,7 +202,7 @@ def test_delete_rented_equipment_not_returned(client):
     assert rental_check.status_code == 200
     assert rental_check.get_json()["id"] == rental_id
 
-# TESTS EQUIPMENT LISTINg
+# TESTS EQUIPMENT LISTING
 
 def test_creating_and_listing_multiple_equipment(client):
     payload1 = {
@@ -291,4 +291,31 @@ def test_updating_equipment_that_dne(client):
     }
     # Attempt to update non-existent equipment 
     update_resp = client.put(f"/equipment/{999999}", json=update_payload)
+    assert update_resp.status_code == 404
+
+# TESTS UPDATING EQUIPMENT STATUS
+
+def test_changing_equipment_status(client):
+    payload = {
+        "name": "Canoe",
+        "category": "Boat",
+    }
+    create_resp = client.post("/equipment", json=payload)
+    assert create_resp.status_code == 201
+    equipment_id = create_resp.get_json()["id"]
+
+    # Update stsatus of equipment from true to false 
+    equipment_status_rest = client.patch(f"/equipment/{equipment_id}/status", json={"is_available": False})
+    assert equipment_status_rest.status_code == 200
+
+    # Check if updatad 
+    status_data = equipment_status_rest.get_json()
+    assert status_data["id"] == equipment_id
+    assert status_data["name"] == "Canoe"
+    assert status_data["category"] == "Boat"
+    assert status_data["is_available"] == False
+
+def test_changing_equipment_status_for_equipment_that_dne(client):
+    # Attempt to change the status of non-existent equipment 
+    update_resp = client.patch(f"/equipment/{999999}/status", json={"is_available": False})
     assert update_resp.status_code == 404
