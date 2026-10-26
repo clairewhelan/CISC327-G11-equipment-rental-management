@@ -30,7 +30,6 @@ def test_create_equipment_and_check_created(client):
     assert data["available_units"] == 1
     assert data["is_available"] == True
 
-
 def test_equipment_input_if_equipment_name_exists(client):
     # Create the first canoe
     payload = {
@@ -69,7 +68,6 @@ def test_equipment_input_if_equipment_name_exists(client):
     assert canoe1_data["total_units"] == 1
     assert canoe1_data["available_units"] == 1
     assert canoe1_data["is_available"] is True
-
 
 def test_equipment_input_if_name_differs_by_case(client):
     payload1 = {
@@ -117,7 +115,6 @@ def test_delete_equipment(client):
     # Verify if equipment no longer exists in list 
     list_resp = client.get("/equipment")
     assert len(list_resp.get_json()) == 0
-
 
 def test_delete_rented_equipment_returned(client):
     # Create equipment with 0 available units
@@ -205,3 +202,49 @@ def test_delete_rented_equipment_not_returned(client):
     assert rental_check.status_code == 200
     assert rental_check.get_json()["id"] == rental_id
 
+# TESTS EQUIPMENT LISTINg
+
+def test_creating_and_listing_multiple_equipment(client):
+    payload1 = {
+        "name": "Canoe",
+        "category": "Boat",
+        "total_units": 1,
+    }
+    resp1 = client.post("/equipment", json=payload1)
+    assert resp1.status_code == 201
+    canoe_id = resp1.get_json()["id"]
+
+    payload2 = {
+        "name": "Tent",
+        "category": "Camping",
+        "total_units": 2,
+    }
+    resp2 = client.post("/equipment", json=payload2)
+    assert resp2.status_code == 201
+    tent_id = resp2.get_json()["id"]
+
+    list_resp = client.get("/equipment")
+    assert list_resp.status_code == 200
+
+    equipment_list = list_resp.get_json()
+    equipment_ids = [item["id"] for item in equipment_list]
+
+    assert canoe_id in equipment_ids
+    assert tent_id in equipment_ids
+    assert len(equipment_list) == 2
+    
+def test_create_equipment_and_check_availability(client):
+    payload = {
+        "name": "Canoe",
+        "category": "Boat",
+        "total_units": 3,
+    }
+    create_resp = client.post("/equipment", json=payload)
+    assert create_resp.status_code == 201
+    equipment_id = create_resp.get_json()["id"]
+
+    avail_resp = client.get(f"/equipment/{equipment_id}/availability")
+    assert avail_resp.status_code == 200
+    data = avail_resp.get_json()
+    assert data["available_units"] == 3
+    assert data["is_available"] is True
