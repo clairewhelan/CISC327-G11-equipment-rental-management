@@ -120,14 +120,11 @@ def test_deleting_equiping_that_dne(client):
     resp_delete = client.delete(f"/equipment/{999999}")
     assert resp_delete.status_code == 404
 
-
 def test_delete_rented_equipment_returned(client):
     # Create equipment with 0 available units
         paylod_equipment = {
             "name": "Canoe",
             "category": "Boat",
-            "available_units": 0,
-            "is_available": False
         }
         equipment_resp = client.post("/equipment", json=paylod_equipment)
         assert equipment_resp.status_code == 201
@@ -149,7 +146,7 @@ def test_delete_rented_equipment_returned(client):
         }
         rented_resp = client.post("/rentals", json=payload_rented)
         assert rented_resp.status_code == 201
-        rented_id = rented_resp.get_json()["id"]
+        rented_id = rented_resp.get_json()["id"]        
 
         # return equipment 
         rented_return_resp = client.put(f"/rentals/{rented_id}/return")
@@ -168,8 +165,6 @@ def test_delete_rented_equipment_not_returned(client):
     paylod_equipment = {
         "name": "Canoe",
         "category": "Boat",
-        "available_units": 0,
-        "is_available": False
     }
     equipment_resp = client.post("/equipment", json=paylod_equipment)
     assert equipment_resp.status_code == 201
@@ -368,6 +363,14 @@ def test_add_renter_w_existing_email(client):
     # Prevent renter from being made 
     assert renter2_resp.status_code == 409
 
+def test_add_renter_w_non_email(client): 
+    payload = {
+        "name": "test",
+        "email": "non-email"
+    }
+    renter1_resp = client.post("/renters", json=payload)
+    assert renter1_resp.status_code == 400
+
 # TESTS DELETING RENTERS
 
 def test_delete_renter_and_check_list(client):
@@ -397,8 +400,6 @@ def test_delete_renter_that_has_returned_equipment(client):
     paylod_equipment = {
         "name": "Canoe",
         "category": "Boat",
-        "available_units": 0,
-        "is_available": False
     }
     equipment_resp = client.post("/equipment", json=paylod_equipment)
     assert equipment_resp.status_code == 201
@@ -439,8 +440,6 @@ def test_delete_renter_that_has_not_returned_equipment(client):
     paylod_equipment = {
         "name": "Canoe",
         "category": "Boat",
-        "available_units": 0,
-        "is_available": False
     }
     equipment_resp = client.post("/equipment", json=paylod_equipment)
     assert equipment_resp.status_code == 201
