@@ -1,7 +1,5 @@
 # TESTS ADDING NEW EQUIPMENT 
 
-# Input Tests 
-
 def test_list_equipment_returns_empty_list_initially(client):
     response = client.get("/equipment")
     assert response.status_code == 200
@@ -54,7 +52,7 @@ def test_equipment_input_if_equipment_name_exists(client):
 
     canoe2_create_resp = client.post("/equipment", json=duplicate_payload)
 
-    # Duplicate equipment names should be rejected (even if lower or uppercase)
+    # Duplicate equipment names should be rejected 
     assert canoe2_create_resp.status_code == 409
 
     # Verify the original canoe remains unchanged
@@ -115,6 +113,8 @@ def test_delete_equipment(client):
     # Verify if equipment no longer exists in list 
     list_resp = client.get("/equipment")
     assert len(list_resp.get_json()) == 0
+
+# R: Add test case for attempting to delete non-existent equipment
 
 def test_delete_rented_equipment_returned(client):
     # Create equipment with 0 available units
@@ -319,3 +319,47 @@ def test_changing_equipment_status_for_equipment_that_dne(client):
     # Attempt to change the status of non-existent equipment 
     update_resp = client.patch(f"/equipment/{999999}/status", json={"is_available": False})
     assert update_resp.status_code == 404
+
+# ------------------- RENTERS TEST -------------------------------
+
+# TEST RENTERS ENDPOINT EXISTS 
+
+def test_list_renturns_returns_empty_list_initially(client):
+    response = client.get("/renters")
+    assert response.status_code == 200
+    assert response.get_json() == []
+
+# TESTS ADDING RENTERS 
+
+def test_add_and_list_new_renter(client): 
+    payload = {
+        "name": "test",
+        "email": "test@gmail.com"
+    }
+    resp = client.post("/renters", json=payload)
+    assert resp.status_code == 201
+    equipment_id = resp.get_json()["id"]
+
+    resp_data = resp.get_json()
+    
+    assert resp_data["id"] == equipment_id
+    assert resp_data["name"] == "test"
+    assert resp_data["email"] == "test@gmail.com"
+
+def test_add_renter_w_existing_email(client):
+    renter1_payload = {
+        "name": "test",
+        "email": "test@gmail.com"
+    }
+
+    renter1_resp = client.post("/renters", json=renter1_payload)
+    assert renter1_resp.status_code == 201
+
+    # Create second renter with the same email as renter1 
+    renter2_payload = {
+        "name": "John",
+        "email": "test@gmail.com"
+    }
+    renter2_resp = client.post("/renters", json=renter2_payload)
+    # Prevent renter from being made 
+    assert renter2_resp.status_code == 409
