@@ -105,7 +105,7 @@ def test_list_returns_empty_list_if_filtered_equipment_dne(client):
     assert response.status_code == 200
     assert response.get_json() == []
 
-def test_list_returns_empty_list_if_given_renter_dne(client):
+def test_list_returns_empty_list_if_filtered_renter_dne(client):
     
     # create renter & equipment
 
@@ -432,7 +432,37 @@ def test_checkout_requires_positive_available_units(client):
     }
     response_1 = client.post("/rentals", json=payload_2)
     assert response_1.status_code == 404
-    
+
+def test_checkout_fails_if_due_date_lt_curr_date(client):
+    # create renter and equipment
+
+    renter_payload = {
+        "name": "renter",
+        "email": "renter@renter.com",
+    }
+    renter_resp = client.post("/renters", json=renter_payload)
+    assert renter_resp.status_code == 201
+    renter_id = renter_resp.get_json()["id"]
+
+    equipment_payload = {
+            "name": "item",
+            "category": "test",
+            "total_units": 1,
+            "is_available": True
+        }
+    equipment_resp = client.post("/equipment", json=equipment_payload)
+    assert equipment_resp.status_code == 201
+    equipment_id = equipment_resp.get_json()["id"]
+
+    # create rental
+    payload = {
+        "renter_id": renter_id,
+        "equipment_id": equipment_id,
+        "due_date": date.today() - timedelta(days=1)
+    }
+    response = client.post("/rentals", json=payload)
+    assert response.status_code == 400
+
 def test_checkout_returns_expected_fields(client):
     
     # create renter and equipment
@@ -518,7 +548,7 @@ def test_checkout_updates_availability(client):
     assert equip_data["available_units"] == 0
 
 
-# TESTS FOR RETURNING EQUIPMENT: TODO
+# TESTS FOR RETURNING EQUIPMENT
 
 def test_return_fails_without_rental_id(client):
     response = client.put("/rentals/return")
