@@ -248,3 +248,47 @@ def test_create_equipment_and_check_availability(client):
     data = avail_resp.get_json()
     assert data["available_units"] == 3
     assert data["is_available"] is True
+
+# TESTS EDITING/UPDATING EQUIPMENT 
+
+def test_create_and_update_equipment(client): 
+    payload = {
+        "name": "Canoe",
+        "category": "Boat",
+    }
+    create_resp = client.post("/equipment", json=payload)
+    assert create_resp.status_code == 201
+    equipment_id = create_resp.get_json()["id"]
+
+    # veryify data exists 
+    equipment_data = create_resp.get_json()
+    assert equipment_data["id"] == equipment_id
+    assert equipment_data["name"] == "Canoe"
+    assert equipment_data["category"] == "Boat"
+
+    # Update equipment 
+    update_payload = {
+        "name": "Tent",
+        "category": "Outdoor Equipment",
+        "total_units": 10
+    }
+    update_resp = client.put(f"/equipment/{equipment_id}", json=update_payload)
+    assert update_resp.status_code == 200
+
+    # Test if data has been updated 
+    update_data = update_resp.get_json()
+    assert update_data["id"] == equipment_id
+    assert update_data["name"] == "Tent"
+    assert update_data["category"] == "Outdoor Equipment"
+    assert update_data["total_units"] == 10
+
+def test_updating_equipment_that_dne(client):
+    # Create payload
+    update_payload = {
+        "name": "Tent",
+        "category": "Outdoor Equipment",
+        "total_units": 10
+    }
+    # Attempt to update non-existent equipment 
+    update_resp = client.put(f"/equipment/{999999}", json=update_payload)
+    assert update_resp.status_code == 404
