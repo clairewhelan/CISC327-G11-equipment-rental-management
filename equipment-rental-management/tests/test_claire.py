@@ -798,13 +798,11 @@ def test_release_fails_without_rental_id(client):
     response = client.put("/rentals/deposit/release")
     assert response.status_code == 404
 
-# TODO: test release fails if provided rental dne
 def test_release_fails_if_rental_dne(client):
     response = client.put("/rentals/1/deposit/release")
     assert response.status_code == 404
     assert response.get_json() == {"error": "Rental not found"}
 
-# TODO: test release fails if rental has not been returned yet
 def test_release_fails_if_rental_not_returned(client):
     
     # create renter and equipment
@@ -846,7 +844,6 @@ def test_release_fails_if_rental_not_returned(client):
     assert response.status_code == 400
     assert response.get_json() == {"error": "Equipment has not been returned yet"}
 
-# TODO: test release updates
 def test_release_updates_flag_in_rental_obj(client):
     
     # create renter and equipment
