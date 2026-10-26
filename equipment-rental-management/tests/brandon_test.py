@@ -1,3 +1,7 @@
+# TESTS ADDING NEW EQUIPMENT 
+
+# Input Tests 
+
 def test_list_equipment_returns_empty_list_initially(client):
     response = client.get("/equipment")
     assert response.status_code == 200
@@ -90,3 +94,114 @@ def test_equipment_input_if_name_differs_by_case(client):
 
     resp2 = client.post("/equipment", json=payload2)
     assert resp2.status_code == 409
+
+# TESTS DELETING EQUIPMENT 
+
+def test_delete_equipment(client):
+    paylod = {
+        "name": "Canoe",
+        "category": "Boat",
+        "total_units": 1,
+        "available_units": 1,
+        "is_available": True,
+    }
+    equipment_resp = client.post("/equipment", json=paylod)
+    assert equipment_resp.status_code == 201
+
+    resp_id = equipment_resp.get_json()["id"]
+
+    # Delete equipment 
+    resp_delete = client.delete(f"/equipment/{resp_id}")
+    assert resp_delete.status_code == 204
+
+    # Verify if equipment no longer exists in list 
+    list_resp = client.get("/equipment")
+    assert len(list_resp.get_json()) == 0
+
+
+def test_delete_rented_equipment_returned(client):
+    # Create equipment with 0 available units
+        paylod_equipment = {
+            "name": "Canoe",
+            "category": "Boat",
+            "available_units": 0,
+            "is_available": False
+        }
+        equipment_resp = client.post("/equipment", json=paylod_equipment)
+        assert equipment_resp.status_code == 201
+        equipment_id = equipment_resp.get_json()["id"]
+    
+        # Create client 
+        payload_renter = {
+            "name": "renter1",
+            "email": "renter1@renter.com",
+        }
+        renter_resp = client.post("/renters", json=payload_renter)
+        assert renter_resp.status_code == 201
+        renter_id = renter_resp.get_json()["id"]
+    
+        # Create rented
+        payload_rented = {
+            "renter_id": renter_id,
+            "equipment_id": equipment_id,
+        }
+        rented_resp = client.post("/rentals", json=payload_rented)
+        assert rented_resp.status_code == 201
+        rented_id = rented_resp.get_json()["id"]
+
+        # return equipment 
+        rented_return_resp = client.put(f"/rentals/{rented_id}/return")
+        assert rented_return_resp.status_code == 200
+
+        # Delete equipment
+        resp_equipment_delete = client.delete(f"/equipment/{equipment_id}")
+        assert resp_equipment_delete.status_code == 204
+
+        # Verify if equipment no longer exists in list 
+        list_resp = client.get("/equipment")
+        assert len(list_resp.get_json()) == 0
+
+def test_delete_rented_equipment_not_returned(client):
+    # Create equipment 
+    paylod_equipment = {
+        "name": "Canoe",
+        "category": "Boat",
+        "available_units": 0,
+        "is_available": False
+    }
+    equipment_resp = client.post("/equipment", json=paylod_equipment)
+    assert equipment_resp.status_code == 201
+    equipment_id = equipment_resp.get_json()["id"]
+
+    # Create client 
+    payload_client = {
+        "name": "renter1",
+        "email": "renter1@renter.com",
+    }
+    client_resp = client.post("/renters", json=payload_client)
+    assert client_resp.status_code == 201
+    client_id = client_resp.get_json()["id"]
+
+    # Create rented 
+    payload_rental = {
+        "renter_id": client_id,
+        "equipment_id": equipment_id,
+    }
+    rental_resp = client.post("/rentals", json=payload_rental)
+    assert rental_resp.status_code == 201
+    rental_id = rental_resp.get_json()["id"]
+
+    # Attempt to delete equipment before rental is returned 
+    deeted_resp = client.delete(f"/equipment/{equipment_id}")
+    assert deeted_resp.status_code == 409
+
+    # Verify if the equipment still exists 
+    equipment_check = client.get(f"/equipment/{equipment_id}")
+    assert equipment_check.status_code == 200
+    assert equipment_check.get_json()["id"] == equipment_id
+
+    # Verify if the rental record still exists 
+    rental_check = client.get(f"/rentals/{rental_id}")
+    assert rental_check.status_code == 200
+    assert rental_check.get_json()["id"] == rental_id
+
