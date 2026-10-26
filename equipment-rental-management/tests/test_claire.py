@@ -844,6 +844,59 @@ def test_release_fails_if_rental_not_returned(client):
     assert response.status_code == 400
     assert response.get_json() == {"error": "Equipment has not been returned yet"}
 
+def test_release_fails_if_deposit_already_released(client):
+    
+    # create renter and equipment
+    
+    renter_payload = {
+        "name": "renter",
+        "email": "renter@renter.com",
+    }
+    renter_resp = client.post("/renters", json=renter_payload)
+    assert renter_resp.status_code == 201
+    renter_id = renter_resp.get_json()["id"]
+
+    equipment_payload = {
+            "name": "item",
+            "category": "test",
+            "total_units": 1,
+            "is_available": True
+        }
+    equipment_resp = client.post("/equipment", json=equipment_payload)
+    assert equipment_resp.status_code == 201
+    equipment_id = equipment_resp.get_json()["id"]
+
+    # create rental
+
+    rental_response = client.post(
+        "/rentals",
+        json={
+            "renter_id": renter_id,
+            "equipment_id": equipment_id,
+            "deposit_amount": 100.0
+        },
+    )
+    assert rental_response.status_code == 201
+    rental_id = rental_response.get_json()["id"]
+
+    # try to release deposit despite not having returned rental
+
+    response = client.put(f"/rentals/{rental_id}/deposit/release")
+    assert response.status_code == 400
+    assert response.get_json() == {"error": "Equipment has not been returned yet"}
+
+    # return rental
+    rental_return = client.put(f"/rentals/{rental_id}/return")
+    assert rental_return.status_code == 200
+
+    # release deposit once
+    release1_response = client.put(f"/rentals/{rental_id}/deposit/release")
+    assert release1_response.status_code == 200
+
+    # release deposit again and check for failure 
+    release_response = client.put(f"/rentals/{rental_id}/deposit/release")
+    assert release_response.status_code == 400
+
 def test_release_updates_flag_in_rental_obj(client):
     
     # create renter and equipment
@@ -881,6 +934,10 @@ def test_release_updates_flag_in_rental_obj(client):
     # return rental
     rental_return = client.put(f"/rentals/{rental_id}/return")
     assert rental_return.status_code == 200
+
+    # release deposit
+    release_response = client.put(f"/rentals/{rental_id}/deposit/release")
+    assert release_response.status_code == 200
 
     # check that deposit_released on rental object is now True
     response = client.get(f"/rentals?renter_id={renter_id}&equipment_id={equipment_id}")
