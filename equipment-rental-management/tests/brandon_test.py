@@ -114,7 +114,10 @@ def test_delete_equipment(client):
     list_resp = client.get("/equipment")
     assert len(list_resp.get_json()) == 0
 
-# R: Add test case for attempting to delete non-existent equipment
+def test_deleting_equiping_that_dne(client):
+    resp_delete = client.delete(f"/equipment/{999999}")
+    assert resp_delete.status_code == 404
+
 
 def test_delete_rented_equipment_returned(client):
     # Create equipment with 0 available units
