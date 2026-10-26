@@ -527,3 +527,25 @@ def test_edit_renter_email_w_non_email(client):
     renter_check = client.get(f"/renters/{renter_id}")
     assert renter_check.status_code == 200
     assert renter_check.get_json()["email"] == "renter1@example.com"
+
+# TESTS LISTING RENTERS 
+
+def list_renters(client):
+    payload = {
+        "name": "test",
+        "email": "test@gmail.com"
+    }
+    resp = client.post("/renters", json=payload)
+    assert resp.status_code == 201
+
+    payload2 = {
+        "name": "John",
+        "email": "john@gmail.com"
+    }
+    resp2 = client.post("/renters", json=payload2)
+    assert resp2.status_code == 201
+
+    # Check if resp list is displaying new renters
+    resp_list = client.post("/renter")
+    assert resp_list.status_code == 201
+    assert len(resp.get_json()) == 2
