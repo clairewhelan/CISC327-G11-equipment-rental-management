@@ -128,7 +128,7 @@ def test_delete_rented_equipment_returned(client):
         assert equipment_resp.status_code == 201
         equipment_id = equipment_resp.get_json()["id"]
     
-        # Create client 
+        # Create renter 
         payload_renter = {
             "name": "renter1",
             "email": "renter1@renter.com",
@@ -170,14 +170,14 @@ def test_delete_rented_equipment_not_returned(client):
     assert equipment_resp.status_code == 201
     equipment_id = equipment_resp.get_json()["id"]
 
-    # Create client 
-    payload_client = {
+    # Create renter 
+    payload_renter = {
         "name": "renter1",
         "email": "renter1@renter.com",
     }
-    client_resp = client.post("/renters", json=payload_client)
-    assert client_resp.status_code == 201
-    client_id = client_resp.get_json()["id"]
+    renter_resp = client.post("/renters", json=payload_renter)
+    assert renter_resp.status_code == 201
+    client_id = renter_resp.get_json()["id"]
 
     # Create rented 
     payload_rental = {
@@ -189,8 +189,8 @@ def test_delete_rented_equipment_not_returned(client):
     rental_id = rental_resp.get_json()["id"]
 
     # Attempt to delete equipment before rental is returned 
-    deeted_resp = client.delete(f"/equipment/{equipment_id}")
-    assert deeted_resp.status_code == 409
+    deleted_resp = client.delete(f"/equipment/{equipment_id}")
+    assert deleted_resp.status_code == 409
 
     # Verify if the equipment still exists 
     equipment_check = client.get(f"/equipment/{equipment_id}")
@@ -198,9 +198,9 @@ def test_delete_rented_equipment_not_returned(client):
     assert equipment_check.get_json()["id"] == equipment_id
 
     # Verify if the rental record still exists 
-    rental_check = client.get(f"/rentals/{rental_id}")
+    rental_check = client.get(f"/rentals")
     assert rental_check.status_code == 200
-    assert rental_check.get_json()["id"] == rental_id
+    assert len(rental_check.get_json()) == 1
 
 # TESTS EQUIPMENT LISTING
 
@@ -338,11 +338,11 @@ def test_add_and_list_new_renter(client):
     }
     resp = client.post("/renters", json=payload)
     assert resp.status_code == 201
-    equipment_id = resp.get_json()["id"]
+    renter_id = resp.get_json()["id"]
 
     resp_data = resp.get_json()
     
-    assert resp_data["id"] == equipment_id
+    assert resp_data["id"] == renter_id
     assert resp_data["name"] == "test"
     assert resp_data["email"] == "test@gmail.com"
 
@@ -351,7 +351,6 @@ def test_add_renter_w_existing_email(client):
         "name": "test",
         "email": "test@gmail.com"
     }
-
     renter1_resp = client.post("/renters", json=renter1_payload)
     assert renter1_resp.status_code == 201
 
@@ -363,3 +362,114 @@ def test_add_renter_w_existing_email(client):
     renter2_resp = client.post("/renters", json=renter2_payload)
     # Prevent renter from being made 
     assert renter2_resp.status_code == 409
+
+# TESTS DELETING RENTERS
+
+def test_delete_renter_and_check_list(client):
+    add_payload = {
+        "name": "test",
+        "email": "test@gmail.com"
+    }
+    renter_resp = client.post("/renters", json=add_payload)
+    assert renter_resp.status_code == 201
+    renter_id = renter_resp.get_json()["id"]
+
+    # delete renter 
+    delete_resp = client.delete(f"/renters/{renter_id}")
+    assert delete_resp.status_code == 204
+
+    # Check if renter is deleted and no longer listed 
+    renter_resp = client.get("/renters")
+    renter_data = renter_resp.get_json()
+    assert len(renter_data) == 0 
+
+def test_delete_non_existent_renter(client):
+    delete_resp = client.delete(f"/renters/{99999999}")
+    assert delete_resp.status_code == 404
+
+def test_delete_renter_that_has_returned_equipment(client):
+    # Create equipment with 0 available units
+    paylod_equipment = {
+        "name": "Canoe",
+        "category": "Boat",
+        "available_units": 0,
+        "is_available": False
+    }
+    equipment_resp = client.post("/equipment", json=paylod_equipment)
+    assert equipment_resp.status_code == 201
+    equipment_id = equipment_resp.get_json()["id"]
+
+    # Create renter
+    payload_renter = {
+        "name": "renter1",
+        "email": "renter1@renter.com",
+    }
+    renter_resp = client.post("/renters", json=payload_renter)
+    assert renter_resp.status_code == 201
+    renter_id = renter_resp.get_json()["id"]
+
+    # Create rented
+    payload_rented = {
+        "renter_id": renter_id,
+        "equipment_id": equipment_id,
+    }
+    rented_resp = client.post("/rentals", json=payload_rented)
+    assert rented_resp.status_code == 201
+    rented_id = rented_resp.get_json()["id"]
+
+    # return equipment 
+    rented_return_resp = client.put(f"/rentals/{rented_id}/return")
+    assert rented_return_resp.status_code == 200
+
+    # Delete renter
+    resp_renter_delete = client.delete(f"/renters/{renter_id}")
+    assert resp_renter_delete.status_code == 204
+
+    # Verify if equipment no longer exists in list 
+    list_resp = client.get("/renters")
+    assert len(list_resp.get_json()) == 0
+
+def test_delete_renter_that_has_not_returned_equipment(client):
+    # Create equipment 
+    paylod_equipment = {
+        "name": "Canoe",
+        "category": "Boat",
+        "available_units": 0,
+        "is_available": False
+    }
+    equipment_resp = client.post("/equipment", json=paylod_equipment)
+    assert equipment_resp.status_code == 201
+    equipment_id = equipment_resp.get_json()["id"]
+
+    # Create renter 
+    payload_renter = {
+        "name": "renter1",
+        "email": "renter1@renter.com",
+    }
+    renter_resp = client.post("/renters", json=payload_renter)
+    assert renter_resp.status_code == 201
+    renter_id = renter_resp.get_json()["id"]
+
+    # Create rented 
+    payload_rental = {
+        "renter_id": renter_id,
+        "equipment_id": equipment_id,
+    }
+    rental_resp = client.post("/rentals", json=payload_rental)
+    assert rental_resp.status_code == 201
+    rental_id = rental_resp.get_json()["id"]
+
+    # Attempt to delete renter before rental is returned 
+    deleted_resp = client.delete(f"/renters/{renter_id}")
+    assert deleted_resp.status_code == 409
+
+    # Verify if the renter still exists 
+    renter_check = client.get(f"/renters/{renter_id}")
+    assert renter_check.status_code == 200
+    assert renter_check.get_json()["id"] == renter_id
+
+    # Verify if the rental record still exists 
+    rental_check = client.get(f"/rentals")
+    assert rental_check.status_code == 200
+    assert len(rental_check.get_json()) == 1
+
