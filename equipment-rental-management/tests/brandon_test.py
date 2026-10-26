@@ -329,7 +329,7 @@ def test_changing_equipment_status_for_equipment_that_dne(client):
 
 # TEST RENTERS ENDPOINT EXISTS 
 
-def test_list_renturns_returns_empty_list_initially(client):
+def test_list_renturs_returns_empty_list_initially(client):
     response = client.get("/renters")
     assert response.status_code == 200
     assert response.get_json() == []
