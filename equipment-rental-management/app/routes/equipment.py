@@ -19,6 +19,7 @@ def create_equipment():
         id=equipment_id,
         name=data["name"],
         category=data["category"],
+        price=data["price"],
         total_units=data.get("total_units", 1),
         available_units=data.get("total_units", 1),
         is_available=data.get("is_available", True),
@@ -43,6 +44,7 @@ def update_equipment(equipment_id):
     data = request.get_json()
     item.name = data.get("name", item.name)
     item.category = data.get("category", item.category)
+    item.price = data.get("price", item.price)
     item.total_units = data.get("total_units", item.total_units)
     item.available_units = data.get("available_units", item.available_units)
     item.is_available = data.get("is_available", item.is_available)
