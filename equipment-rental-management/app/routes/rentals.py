@@ -94,3 +94,21 @@ def release_deposit(rental_id):
 
     # BUG: rental.deposit_released is never set to True here — state is not persisted.
     return jsonify({"rental_id": rental_id, "deposit_released": True})
+
+@rentals_bp.route("/deposit_threshold", methods=["GET"])
+def get_deposit_threshold():
+    price = store.deposit_threshold
+    return jsonify({"deposit_threshold": price})
+
+@rentals_bp.route("/deposit_threshold", methods=["PUT"])
+def update_deposit_threshold():
+    price = request.get_json()["price"]
+    if price is None:
+        return jsonify({"error": "Price not given"}), 404
+    if type(price) != float:
+        return jsonify({"error": "Price invalid"}), 404
+    if price < 0.0:
+        return jsonify({"error": "Price cannot be negative"}), 400
+
+    store.deposit_threshold = price
+    return jsonify({"deposit_threshold": price})
