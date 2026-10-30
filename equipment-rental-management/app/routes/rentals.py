@@ -33,13 +33,19 @@ def checkout_equipment():
     #       return jsonify({"error": "Equipment is out of service"}), 400
     item.available_units -= 1
 
+    # calculate default deposit amount based on deposit threshold
+    default_deposit = 0.0
+    deposit_threshold = store.deposit_threshold
+    if float(item.price) > deposit_threshold:
+        default_deposit = float(item.price)*0.05
+
     rental_id = store.next_id("rental")
     rental = Rental(
         id=rental_id,
         equipment_id=data["equipment_id"],
         renter_id=data["renter_id"],
         due_date=Rental.default_due_date(),
-        deposit_amount=data.get("deposit_amount", 0.0),
+        deposit_amount=data.get("deposit_amount", default_deposit),
     )
     store.rentals[rental_id] = rental
     return jsonify(rental.to_dict()), 201
