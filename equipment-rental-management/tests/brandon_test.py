@@ -122,43 +122,43 @@ def test_deleting_equiping_that_dne(client):
 
 def test_delete_rented_equipment_returned(client):
     # Create equipment with 0 available units
-        paylod_equipment = {
-            "name": "Canoe",
-            "category": "Boat",
-        }
-        equipment_resp = client.post("/equipment", json=paylod_equipment)
-        assert equipment_resp.status_code == 201
-        equipment_id = equipment_resp.get_json()["id"]
-    
-        # Create renter 
-        payload_renter = {
-            "name": "renter1",
-            "email": "renter1@renter.com",
-        }
-        renter_resp = client.post("/renters", json=payload_renter)
-        assert renter_resp.status_code == 201
-        renter_id = renter_resp.get_json()["id"]
-    
-        # Create rented
-        payload_rented = {
-            "renter_id": renter_id,
-            "equipment_id": equipment_id,
-        }
-        rented_resp = client.post("/rentals", json=payload_rented)
-        assert rented_resp.status_code == 201
-        rented_id = rented_resp.get_json()["id"]        
+    paylod_equipment = {
+        "name": "Canoe",
+        "category": "Boat",
+    }
+    equipment_resp = client.post("/equipment", json=paylod_equipment)
+    assert equipment_resp.status_code == 201
+    equipment_id = equipment_resp.get_json()["id"]
 
-        # return equipment 
-        rented_return_resp = client.put(f"/rentals/{rented_id}/return")
-        assert rented_return_resp.status_code == 200
+    # Create renter 
+    payload_renter = {
+        "name": "renter1",
+        "email": "renter1@renter.com",
+    }
+    renter_resp = client.post("/renters", json=payload_renter)
+    assert renter_resp.status_code == 201
+    renter_id = renter_resp.get_json()["id"]
 
-        # Delete equipment
-        resp_equipment_delete = client.delete(f"/equipment/{equipment_id}")
-        assert resp_equipment_delete.status_code == 204
+    # Create rented
+    payload_rented = {
+        "renter_id": renter_id,
+        "equipment_id": equipment_id,
+    }
+    rented_resp = client.post("/rentals", json=payload_rented)
+    assert rented_resp.status_code == 201
+    rented_id = rented_resp.get_json()["id"]        
 
-        # Verify if equipment no longer exists in list 
-        list_resp = client.get("/equipment")
-        assert len(list_resp.get_json()) == 0
+    # return equipment 
+    rented_return_resp = client.put(f"/rentals/{rented_id}/return")
+    assert rented_return_resp.status_code == 200
+
+    # Delete equipment
+    resp_equipment_delete = client.delete(f"/equipment/{equipment_id}")
+    assert resp_equipment_delete.status_code == 204
+
+    # Verify if equipment no longer exists in list 
+    list_resp = client.get("/equipment")
+    assert len(list_resp.get_json()) == 0
 
 def test_delete_rented_equipment_not_returned(client):
     # Create equipment 
@@ -293,6 +293,33 @@ def test_updating_equipment_that_dne(client):
     update_resp = client.put(f"/equipment/{999999}", json=update_payload)
     assert update_resp.status_code == 404
 
+def test_update_equipment_with_more_damaged_units_than_total(client):
+    payload = {
+        "name": "Canoe",
+        "category": "Boat",
+        "total_units": 10
+    }
+    equipment_resp = client.post(f"/equipment", json=payload)
+    equipment_id = equipment_resp.get_json()["id"]
+    assert equipment_resp.status_code == 201
+
+    # Create payload
+    update_payload = {
+        "name": "Tent",
+        "category": "Outdoor Equipment",
+        "damaged_units": 11
+    }
+
+    # Attempt to update non-existent equipment 
+    update_resp = client.put(f"/equipment/{equipment_id}", json=update_payload)
+    assert update_resp.status_code == 400
+
+    # Check if data has changed at all. 
+    data = equipment_resp.get_json()
+    assert data["name"] == "Canoe"
+    assert data["category"] == "Boat"
+    assert data["damaged_units"] == 0
+
 # TESTS UPDATING EQUIPMENT STATUS
 
 def test_changing_equipment_status(client):
@@ -319,6 +346,41 @@ def test_changing_equipment_status_for_equipment_that_dne(client):
     # Attempt to change the status of non-existent equipment 
     update_resp = client.patch(f"/equipment/{999999}/status", json={"is_available": False})
     assert update_resp.status_code == 404
+
+def test_updating_number_of_damaged_equipment_when_returned_damaged(client):
+    paylod_equipment = {
+        "name": "Canoe",
+        "category": "Boat",
+    }
+    equipment_resp = client.post("/equipment", json=paylod_equipment)
+    assert equipment_resp.status_code == 201
+    equipment_id = equipment_resp.get_json()["id"]
+
+    # Create renter 
+    payload_renter = {
+        "name": "renter1",
+        "email": "renter1@renter.com",
+    }
+    renter_resp = client.post("/renters", json=payload_renter)
+    assert renter_resp.status_code == 201
+    renter_id = renter_resp.get_json()["id"]
+
+    # Create rented
+    payload_rented = {
+        "renter_id": renter_id,
+        "equipment_id": equipment_id,
+    }
+    rented_resp = client.post("/rentals", json=payload_rented)
+    assert rented_resp.status_code == 201
+    rented_id = rented_resp.get_json()["id"]        
+
+    # return equipment and mark it as damaged  
+    rented_return_resp = client.put(f"/rentals/{rented_id}/return", json={"damaged": True})    
+    assert rented_return_resp.status_code == 200
+
+    damaged_equipment_resp = client.get(f"/equipment/{equipment_id}", json=paylod_equipment)
+    damaged_equipment = damaged_equipment_resp.get_json()
+    assert damaged_equipment["damaged_units"] == 1 # Verify it counted for 1 damaged unit 
 
 # ------------------- RENTERS TEST -------------------------------
 
