@@ -26,6 +26,7 @@ def equipment_page():
             category=request.form["category"],
             total_units=total_units,
             available_units=total_units,
+            price=request.form["price"]
         )
         store.equipment[equipment_id] = item
         return redirect(url_for("views.equipment_page"))
