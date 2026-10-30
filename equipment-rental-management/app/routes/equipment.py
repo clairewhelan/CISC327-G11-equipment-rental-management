@@ -47,6 +47,7 @@ def update_equipment(equipment_id):
     item.price = data.get("price", item.price)
     item.total_units = data.get("total_units", item.total_units)
     item.available_units = data.get("available_units", item.available_units)
+    item.price = data.get("price", item.price)
     item.is_available = data.get("is_available", item.is_available)
     return jsonify(item.to_dict())
 
