@@ -3,7 +3,7 @@
 <h1>Rentals</h1>
 <table>
   <tr>
-    <th>ID</th><th>Equipment ID</th><th>Renter ID</th><th>Rental Date</th><th>Due Date</th><th>Return Date</th><th></th>
+    <th>ID</th><th>Equipment ID</th><th>Renter ID</th><th>Rental Date</th><th>Due Date</th><th>Return Date</th><th>Damaged</th><th></th>
   </tr>
   {% for rental in rentals %}
   <tr>
@@ -13,10 +13,19 @@
     <td>{{ rental.rental_date }}</td>
     <td>{{ rental.due_date }}</td>
     <td>{{ rental.return_date or "-" }}</td>
+    <td>{{ rental.unit_damaged if rental.return_date else "-" }}</td>    
     <td>
       {% if not rental.return_date %}
       <form class="delete-form" method="post" action="{{ url_for('views.return_rental_page', rental_id=rental.id) }}">
-        <button type="submit">Return</button>
+        <button type="button" onclick="this.nextElementSibling.showModal()">
+          Return
+        </button>
+        <dialog>
+          <p>Was the returned unit damaged?</p>
+          <button type="submit" name="damaged" value="true">Yes</button>
+          <button type="submit" name="damaged" value="false">No</button>
+          <button type="button" onclick="this.closest('dialog').close()">Cancel</button>
+        </dialog>
       </form>
       {% endif %}
     </td>
