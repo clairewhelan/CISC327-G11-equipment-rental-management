@@ -26,6 +26,7 @@ def equipment_page():
             category=request.form["category"],
             total_units=total_units,
             available_units=total_units,
+            damaged_units=0
         )
         store.equipment[equipment_id] = item
         return redirect(url_for("views.equipment_page"))
@@ -37,6 +38,33 @@ def delete_equipment_page(equipment_id):
     store.equipment.pop(equipment_id, None)
     return redirect(url_for("views.equipment_page"))
 
+@views_bp.route("/ui/equipment/<int:equipment_id>/edit", methods=["POST"])
+def edit_equipment_page(equipment_id):
+    item = store.equipment.get(equipment_id)
+
+    if item is None:
+        return redirect(url_for("views.equipment_page"))
+    
+    total_units = int(request.form.get("total_units", item.total_units))
+    available_units = int(request.form.get("available_units", item.available_units))
+    damaged_units = int(request.form.get("damaged_units", item.damaged_units))
+    
+    # Case where if user tries to input more damaged units then there are available units 
+    if total_units < 0 or available_units < 0 or damaged_units < 0:
+        return redirect(url_for("views.equipment_page"))
+
+    # Case if use tries to add more damaged units and available units then there are total units
+    if damaged_units + available_units > total_units:
+        return redirect(url_for("views.equipment_page"))
+
+    item.name = request.form.get("name", item.name)
+    item.category = request.form.get("category", item.category)
+    item.total_units = total_units
+    item.available_units = available_units
+    item.damaged_units = damaged_units
+
+    return redirect(url_for("views.equipment_page"))
+    
 
 @views_bp.route("/ui/renters", methods=["GET", "POST"])
 def renters_page():
@@ -81,5 +109,10 @@ def return_rental_page(rental_id):
         rental.return_date = date.today()
         item = store.equipment.get(rental.equipment_id)
         if item is not None:
-            item.available_units += 1
+            if request.form.get("damaged") == "true":
+                rental.unit_damaged = True
+                item.damaged_units += 1
+            else:
+                item.available_units += 1
+
     return redirect(url_for("views.rentals_page"))

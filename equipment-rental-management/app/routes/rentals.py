@@ -52,11 +52,18 @@ def return_equipment(rental_id):
         return jsonify({"error": "Rental not found"}), 404
     if rental.return_date is not None:
         return jsonify({"error": "Rental already returned"}), 400
-
+    
+    data = request.get_json() or {}
+    
     rental.return_date = date.today()
     item = store.equipment.get(rental.equipment_id)
+
     if item is not None:
-        item.available_units += 1
+        if data.get("damaged") is True:
+            rental.unit_damaged = True
+            item.damaged_units += 1
+        else:
+            item.available_units += 1
 
     return jsonify(rental.to_dict())
 
