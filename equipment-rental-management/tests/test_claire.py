@@ -946,3 +946,107 @@ def test_release_updates_flag_in_rental_obj(client):
     assert deposit_released == True
 
 
+# TESTS FOR PRICE SETTING AND DEOPOSIT FUNCTIONALITY
+
+def test_set_deposit_threshold_fails_if_price_not_given(client):
+    payload = {
+        "price": None,
+    }
+    response = client.put("/rentals/deposit_threshold", json=payload)
+    assert response.status_code == 404
+    assert response.get_json() == {"error": "Price not given"}
+
+def test_set_deposit_threshold_fails_if_price_invalid(client):
+    payload = {
+        "price": "a",
+    }
+    response = client.put("/rentals/deposit_threshold",json=payload)
+    assert response.status_code == 404
+    assert response.get_json() == {"error": "Price invalid"}
+    
+def test_set_deposit_threshold_fails_if_price_negative(client):
+    payload = {
+        "price": -1.0,
+    }
+    response = client.put("/rentals/deposit_threshold",json=payload)
+    assert response.status_code == 400
+    assert response.get_json() == {"error": "Price cannot be negative"}
+    
+def test_get_deposit_threshold_returns_default_at_first(client):
+    response = client.get("/rentals/deposit_threshold")
+    assert response.status_code == 200
+    assert response.get_json()["deposit_threshold"] == 100.0
+        
+def test_equipment_checkout_with_price_under_deposit_threshold_returns_0_deposit_amount(client):
+
+    renter_payload = {
+        "name": "renter",
+        "email": "renter@renter.com",
+    }
+    renter_resp = client.post("/renters", json=renter_payload)
+    assert renter_resp.status_code == 201
+    renter_id = renter_resp.get_json()["id"]
+    
+    equipment_payload = {
+            "name": "item",
+            "category": "test",
+            "price": 50.0,
+            "total_units": 1,
+            "is_available": True
+        }
+    equipment_resp = client.post("/equipment", json=equipment_payload)
+    assert equipment_resp.status_code == 201
+    equipment_id = equipment_resp.get_json()["id"]
+
+    # create rental
+    payload = {
+        "renter_id": renter_id,
+        "equipment_id": equipment_id,
+    }
+    response = client.post("/rentals", json=payload)
+    assert response.status_code == 201
+
+    # get rental
+    rental_response = client.get(f"/rentals?renter_id={renter_id}&equipment_id={equipment_id}")
+    assert rental_response.status_code == 200
+
+    # check expected fields
+    data = rental_response.get_json()[0]
+    assert data["deposit_amount"] == 0.0
+
+
+def test_equipment_checkout_with_price_over_deposit_threshold_returns_expected_deposit_amount(client):
+    renter_payload = {
+        "name": "renter",
+        "email": "renter@renter.com",
+    }
+    renter_resp = client.post("/renters", json=renter_payload)
+    assert renter_resp.status_code == 201
+    renter_id = renter_resp.get_json()["id"]
+    
+    equipment_payload = {
+            "name": "item",
+            "category": "test",
+            "price": 300.0,
+            "total_units": 1,
+            "is_available": True
+        }
+    equipment_resp = client.post("/equipment", json=equipment_payload)
+    assert equipment_resp.status_code == 201
+    equipment_id = equipment_resp.get_json()["id"]
+
+    # create rental
+    payload = {
+        "renter_id": renter_id,
+        "equipment_id": equipment_id,
+    }
+    response = client.post("/rentals", json=payload)
+    assert response.status_code == 201
+
+    # get rental
+    rental_response = client.get(f"/rentals?renter_id={renter_id}&equipment_id={equipment_id}")
+    assert rental_response.status_code == 200
+
+    # check expected fields
+    data = rental_response.get_json()[0]
+    assert data["deposit_amount"] == 15.0
