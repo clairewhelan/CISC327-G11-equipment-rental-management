@@ -3,7 +3,7 @@
 <h1>Equipment</h1>
 <table>
   <tr>
-    <th>ID</th><th>Name</th><th>Category</th><th>Total</th><th>Available</th><th>Damaged</th><th></th>
+    <th>ID</th><th>Name</th><th>Category</th><th>Total</th><th>Available</th><th>Damaged</th><th>Price/Day</th><th></th>
   </tr>
   {% for item in equipment %}
   <tr>
@@ -13,6 +13,7 @@
     <td>{{ item.total_units }}</td>
     <td>{{ item.available_units }}</td>
     <td>{{ item.damaged_units }}</td>
+    <td>${{ item.price }}</td>
     <td>
       <button type="button" onclick="this.nextElementSibling.showModal()">
         Edit
@@ -25,6 +26,10 @@
 
           <label>Category:
             <input type="text" name="category" value="{{ item.category }}" required>
+          </label>
+
+          <label>Price:
+            <input type="number" name="price" value="{{ item.price }}" required>
           </label>
 
           <label>Total Units:
@@ -56,6 +61,7 @@
   <label>Name <input type="text" name="name" required></label>
   <label>Category <input type="text" name="category" required></label>
   <label>Total Units <input type="number" name="total_units" value="1" min="1" required></label>
+  <label>Price/Day <input type="number" name="price" value="0.0" min="0.0" step="0.25" required></label>
   <button type="submit">Add Equipment</button>
 </form>
 {% endblock %}

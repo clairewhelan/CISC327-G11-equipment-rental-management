@@ -3,13 +3,14 @@
 <h1>Rentals</h1>
 <table>
   <tr>
-    <th>ID</th><th>Equipment ID</th><th>Renter ID</th><th>Rental Date</th><th>Due Date</th><th>Return Date</th><th>Damaged</th><th></th>
+    <th>ID</th><th>Equipment ID</th><th>Renter ID</th><th>Deposit Amount</th><th>Rental Date</th><th>Due Date</th><th>Return Date</th><th>Damaged</th><th></th>
   </tr>
   {% for rental in rentals %}
   <tr>
     <td>{{ rental.id }}</td>
     <td>{{ rental.equipment_id }}</td>
     <td>{{ rental.renter_id }}</td>
+    <td>${{ rental.deposit_amount }}</td>
     <td>{{ rental.rental_date }}</td>
     <td>{{ rental.due_date }}</td>
     <td>{{ rental.return_date or "-" }}</td>
@@ -38,5 +39,12 @@
   <label>Equipment ID <input type="number" name="equipment_id" required></label>
   <label>Renter ID <input type="number" name="renter_id" required></label>
   <button type="submit">Check Out</button>
+</form>
+
+<h2>Set Price Threshold Past Which Items Require a Deposit</h2>
+<form method="post" action="{{ url_for('views.deposit_threshold') }}">
+  <label>Current Threshold: <text>${{deposit_threshold}}</text></label>
+  <label>New Threshold <input type="number" name="price" value="{{ deposit_threshold }}" required></label>
+  <button type="submit">Update</button>
 </form>
 {% endblock %}

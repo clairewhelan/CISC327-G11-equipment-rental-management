@@ -19,6 +19,7 @@ def create_equipment():
         id=equipment_id,
         name=data["name"],
         category=data["category"],
+        price=data.get("price", 0.0),
         total_units=data.get("total_units", 1),
         available_units=data.get("total_units", 1),
         is_available=data.get("is_available", True),
@@ -57,8 +58,10 @@ def update_equipment(equipment_id):
     
     item.name = data.get("name", item.name)
     item.category = data.get("category", item.category)
+    item.price = data.get("price", item.price)
     item.total_units = data.get("total_units", item.total_units)
     item.available_units = data.get("available_units", item.available_units)
+    item.price = data.get("price", item.price)
     item.is_available = data.get("is_available", item.is_available)
     item.damaged_units = data.get("damaged_units", item.damaged_units)
     return jsonify(item.to_dict())

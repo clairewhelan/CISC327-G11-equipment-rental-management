@@ -55,6 +55,8 @@ app working without a REST client, and calls the same in-memory store.
 | POST | `/rentals` | Check out equipment (`equipment_id`, `renter_id`) |
 | PUT | `/rentals/<id>/return` | Return rented equipment |
 | GET | `/rentals?renter_id=&equipment_id=` | Look up rentals |
+| PUT | `/rentals/deposit_threshold` | Update the price threshold for deposits |
+| GET | `/rentals/deposit_threshold` | View the price threshold for deposits |
 
 ## Tests
 

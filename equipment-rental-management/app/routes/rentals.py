@@ -33,13 +33,19 @@ def checkout_equipment():
     #       return jsonify({"error": "Equipment is out of service"}), 400
     item.available_units -= 1
 
+    # calculate default deposit amount based on deposit threshold
+    default_deposit = 0.0
+    deposit_threshold = store.deposit_threshold
+    if float(item.price) > deposit_threshold:
+        default_deposit = float(item.price)*0.05
+
     rental_id = store.next_id("rental")
     rental = Rental(
         id=rental_id,
         equipment_id=data["equipment_id"],
         renter_id=data["renter_id"],
         due_date=Rental.default_due_date(),
-        deposit_amount=data.get("deposit_amount", 0.0),
+        deposit_amount=data.get("deposit_amount", default_deposit),
     )
     store.rentals[rental_id] = rental
     return jsonify(rental.to_dict()), 201
@@ -104,3 +110,21 @@ def release_deposit(rental_id):
 
     # BUG: rental.deposit_released is never set to True here — state is not persisted.
     return jsonify({"rental_id": rental_id, "deposit_released": True})
+
+@rentals_bp.route("/deposit_threshold", methods=["GET"])
+def get_deposit_threshold():
+    price = store.deposit_threshold
+    return jsonify({"deposit_threshold": price})
+
+@rentals_bp.route("/deposit_threshold", methods=["PUT"])
+def update_deposit_threshold():
+    price = request.get_json()["price"]
+    if price is None:
+        return jsonify({"error": "Price not given"}), 404
+    if type(price) != float:
+        return jsonify({"error": "Price invalid"}), 404
+    if price < 0.0:
+        return jsonify({"error": "Price cannot be negative"}), 400
+
+    store.deposit_threshold = price
+    return jsonify({"deposit_threshold": price})

@@ -9,6 +9,7 @@ program, while still separating storage from the route/model code.
 equipment = {}
 renters = {}
 rentals = {}
+deposit_threshold = 100.0
 
 _next_ids = {"equipment": 1, "renter": 1, "rental": 1}
 
@@ -24,4 +25,4 @@ def reset():
     equipment.clear()
     renters.clear()
     rentals.clear()
-    _next_ids.update(equipment=1, renter=1, rental=1)
+    _next_ids.update(equipment=1, renter=1, rental=1, deposit_threshold=100)
