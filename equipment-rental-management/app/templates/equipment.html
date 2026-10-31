@@ -3,7 +3,7 @@
 <h1>Equipment</h1>
 <table>
   <tr>
-    <th>ID</th><th>Name</th><th>Category</th><th>Total</th><th>Available</th><th>Price/Day</th><th></th>
+    <th>ID</th><th>Name</th><th>Category</th><th>Total</th><th>Available</th><th>Damaged</th><th>Price/Day</th><th></th>
   </tr>
   {% for item in equipment %}
   <tr>
@@ -12,8 +12,38 @@
     <td>{{ item.category }}</td>
     <td>{{ item.total_units }}</td>
     <td>{{ item.available_units }}</td>
+    <td>{{ item.damaged_units }}</td>
     <td>${{ item.price }}</td>
     <td>
+      <button type="button" onclick="this.nextElementSibling.showModal()">
+        Edit
+      </button>
+      <dialog>
+        <form method="post" action="{{ url_for('views.edit_equipment_page', equipment_id=item.id) }}">
+          <label>Name:
+            <input type="text" name="name" value="{{ item.name }}" required>
+          </label>
+
+          <label>Category:
+            <input type="text" name="category" value="{{ item.category }}" required>
+          </label>
+
+          <label>Total Units:
+            <input type="number" name="total_units" value="{{ item.total_units }}" min="0">
+          </label>
+
+          <label>Available Units:
+            <input type="number" name="available_units" value="{{ item.available_units }}" min="0">
+          </label>
+
+          <label>Damaged Units:
+            <input type="number" name="damaged_units" value="{{ item.damaged_units }}" min="0">
+          </label>
+
+          <button type="submit">Save Changes</button>
+          <button type="button" onclick="this.closest('dialog').close()">Cancel</button>
+        </form>
+      </dialog>
       <form class="delete-form" method="post" action="{{ url_for('views.delete_equipment_page', equipment_id=item.id) }}">
         <button type="submit">Delete</button>
       </form>
