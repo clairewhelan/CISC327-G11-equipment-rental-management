@@ -60,6 +60,7 @@ def edit_equipment_page(equipment_id):
 
     item.name = request.form.get("name", item.name)
     item.category = request.form.get("category", item.category)
+    item.price = request.form.get("price", item.price)
     item.total_units = total_units
     item.available_units = available_units
     item.damaged_units = damaged_units
