@@ -19,7 +19,7 @@ def create_equipment():
         id=equipment_id,
         name=data["name"],
         category=data["category"],
-        price=data["price"],
+        price=data.get("price", 0.0),
         total_units=data.get("total_units", 1),
         available_units=data.get("total_units", 1),
         is_available=data.get("is_available", True),
