@@ -9,7 +9,7 @@ program, while still separating storage from the route/model code.
 equipment = {}
 renters = {}
 rentals = {}
-deposit_threshold = 100
+deposit_threshold = 100.0
 
 _next_ids = {"equipment": 1, "renter": 1, "rental": 1}
 

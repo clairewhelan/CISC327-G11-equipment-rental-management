@@ -72,7 +72,16 @@ def rentals_page():
             )
             store.rentals[rental_id] = rental
         return redirect(url_for("views.rentals_page"))
-    return render_template("rentals.html", rentals=store.rentals.values())
+    return render_template("rentals.html", rentals=store.rentals.values(), deposit_threshold=store.deposit_threshold)
+
+@views_bp.route("/ui/rentals/deposit_threshold", methods=["POST"])
+def deposit_threshold():
+    print(request.method)
+    if request.method == "POST":
+        price = float(request.form["price"])
+        store.deposit_threshold = price
+        return redirect(url_for("views.rentals_page"))
+    return render_template("rentals.html", rentals=store.rentals.values(), deposit_threshold=store.deposit_threshold)
 
 
 @views_bp.route("/ui/rentals/<int:rental_id>/return", methods=["POST"])
