@@ -2,6 +2,10 @@ name: Equipment Rental Management CI
 
 on:
   push:
+    # wasn't sure from assignment instructions whether
+    # workflow needs to run on pushes to every branch
+    # or just to main like for PRs. we went with pushes
+    # to every branch just to be safe 
   pull_request:
     branches: [main]
     types: [opened, synchronized, reopened]
