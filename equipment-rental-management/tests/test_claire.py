@@ -1,5 +1,7 @@
 from datetime import date, timedelta
 
+import pytest
+
 # TESTS FOR RENTAL LISTING/LOOKUP
 
 def test_list_rentals_returns_empty_list_initially(client):
@@ -201,7 +203,7 @@ def test_rentals_filters_by_renter(client):
     equipment_payload = {
             "name": "item",
             "category": "test",
-            "total_units": 1,
+            "total_units": 2,
             "is_available": True
         }
     equipment_resp = client.post("/equipment", json=equipment_payload)
@@ -212,7 +214,7 @@ def test_rentals_filters_by_renter(client):
     
     renter_payload_1 = {
         "name": "renter",
-        "email": "renter@renter.com",
+        "email": "renter1@renter.com",
     }
     renter_resp_1 = client.post("/renters", json=renter_payload_1)
     assert renter_resp_1.status_code == 201
@@ -220,7 +222,7 @@ def test_rentals_filters_by_renter(client):
 
     renter_payload_2 = {
         "name": "renter",
-        "email": "renter@renter.com",
+        "email": "renter2@renter.com",
     }
     renter_resp_2 = client.post("/renters", json=renter_payload_2)
     assert renter_resp_2.status_code == 201
@@ -329,6 +331,7 @@ def test_checkout_fails_if_renter_dne(client):
     response = client.post("/rentals", json=payload)
     assert response.status_code == 404
 
+@pytest.mark.xfail(reason="Test no longer relevant: deposit_amount field defunct since enhancements from A2")
 def test_checkout_fails_with_invalid_deposit_amount(client):
     
     # create renter and equipment
@@ -360,6 +363,7 @@ def test_checkout_fails_with_invalid_deposit_amount(client):
     response = client.post("/rentals", json=payload)
     assert response.status_code == 404
 
+@pytest.mark.xfail(reason="Test no longer relevant: is_available flag on equipment defunct since enhancements from A2")
 def test_checkout_requires_is_available_true(client):
     
     # create renter and equipment with is_available=False
@@ -431,7 +435,7 @@ def test_checkout_requires_positive_available_units(client):
         "equipment_id": equipment_id,
     }
     response_1 = client.post("/rentals", json=payload_2)
-    assert response_1.status_code == 404
+    assert response_1.status_code == 400
 
 def test_checkout_fails_if_due_date_lt_curr_date(client):
     # create renter and equipment
@@ -458,7 +462,7 @@ def test_checkout_fails_if_due_date_lt_curr_date(client):
     payload = {
         "renter_id": renter_id,
         "equipment_id": equipment_id,
-        "due_date": date.today() - timedelta(days=1)
+        "due_date": (date.today() - timedelta(days=1)).isoformat()
     }
     response = client.post("/rentals", json=payload)
     assert response.status_code == 400
@@ -490,7 +494,7 @@ def test_checkout_returns_expected_fields(client):
         "renter_id": renter_id,
         "equipment_id": equipment_id,
         "deposit_amount": 100.0,
-        "due_date": date.today() + timedelta(days=1)
+        "due_date": (date.today() + timedelta(days=1)).isoformat()
     }
     response = client.post("/rentals", json=payload)
     assert response.status_code == 201
@@ -536,7 +540,6 @@ def test_checkout_updates_availability(client):
         "renter_id": renter_id,
         "equipment_id": equipment_id,
         "deposit_amount": 100.0,
-        "due_date": date.today() + timedelta(days=1)
     }
     response = client.post("/rentals", json=payload)
     assert response.status_code == 201
