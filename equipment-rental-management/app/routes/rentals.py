@@ -14,7 +14,7 @@ def list_rentals():
     renter_id = request.args.get("renter_id", type=int)
     equipment_id = request.args.get("equipment_id", type=int)
     if renter_id is not None:
-        results = [r for r in results if r.equipment_id == renter_id]
+        results = [r for r in results if r.renter_id == renter_id]
     if equipment_id is not None:
         results = [r for r in results if r.equipment_id == equipment_id]
     return jsonify([r.to_dict() for r in results])
@@ -27,10 +27,24 @@ def checkout_equipment():
     if item is None:
         return jsonify({"error": "Equipment not found"}), 404
 
-    # BUG: does not check item.is_available — out-of-service equipment can
-    # still be checked out. The check below is intentionally absent:
-    #   if not item.is_available:
-    #       return jsonify({"error": "Equipment is out of service"}), 400
+    # check for renter
+    renter_item = store.renters.get(data["renter_id"])
+    if renter_item is None:
+        return jsonify({"error": "Renter not found"}), 404
+
+    # check available units
+    if item.available_units <=0:
+        return jsonify({"error": "No available units"}), 400
+
+    # check valid due date
+    due_date = Rental.default_due_date()
+    if "due_date" in data:
+        if date.fromisoformat(data["due_date"]) < date.today():
+            return jsonify({"error": "Invalid due date"}), 400
+        else:
+            due_date = date.fromisoformat(data["due_date"])
+
+    
     item.available_units -= 1
 
     # calculate default deposit amount based on deposit threshold
@@ -44,7 +58,7 @@ def checkout_equipment():
         id=rental_id,
         equipment_id=data["equipment_id"],
         renter_id=data["renter_id"],
-        due_date=Rental.default_due_date(),
+        due_date=due_date,
         deposit_amount=data.get("deposit_amount", default_deposit),
     )
     store.rentals[rental_id] = rental
@@ -94,21 +108,17 @@ def extend_rental(rental_id):
 
 @rentals_bp.route("/<int:rental_id>/deposit/release", methods=["PUT"])
 def release_deposit(rental_id):
-    """Release the damage deposit hold for a returned rental.
+    """Release the damage deposit hold for a returned rental."""
 
-    BUG: this endpoint returns {"deposit_released": true} in the response
-    but does NOT persist the change on the rental object. A subsequent GET
-    on the rental will still show deposit_released as false. The missing line
-    is:
-        rental.deposit_released = True
-    """
     rental = store.rentals.get(rental_id)
     if rental is None:
         return jsonify({"error": "Rental not found"}), 404
     if rental.return_date is None:
         return jsonify({"error": "Equipment has not been returned yet"}), 400
+    if rental.deposit_released == True:
+        return jsonify({"error": "Deposit has already been released"}), 400
 
-    # BUG: rental.deposit_released is never set to True here — state is not persisted.
+    rental.deposit_released = True
     return jsonify({"rental_id": rental_id, "deposit_released": True})
 
 @rentals_bp.route("/deposit_threshold", methods=["GET"])
