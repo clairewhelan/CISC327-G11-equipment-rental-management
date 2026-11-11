@@ -4,6 +4,7 @@ from flask import Blueprint, jsonify, request
 
 from app import store
 from app.models.rental import Rental
+from notification_service import is_service_available, send_notification, get_notifications
 
 rentals_bp = Blueprint("rentals", __name__, url_prefix="/rentals")
 
@@ -48,6 +49,22 @@ def checkout_equipment():
         deposit_amount=data.get("deposit_amount", default_deposit),
     )
     store.rentals[rental_id] = rental
+    
+    # Send notification after checkout 
+    message = f"Thank you for checking out {item.name}. Your scheduled return date is {rental.due_date}. We hope you enjoy the product."    
+    subject = "Checkout Confirmation"
+    renter = store.renters.get(data["renter_id"])
+
+    if renter is None:
+        return jsonify({"error": "No renter with that id found"}), 404
+    
+    notification_state = send_notification(renter.email, subject, message)
+    if notification_state == False: 
+        return jsonify({
+            "error": "Rental was created successfully, but the notification failed to send.",
+            "rental": rental.to_dict()
+        }), 500    
+    
     return jsonify(rental.to_dict()), 201
 
 
