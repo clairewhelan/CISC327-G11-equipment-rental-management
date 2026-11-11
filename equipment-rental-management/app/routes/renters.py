@@ -1,5 +1,4 @@
 from flask import Blueprint, jsonify, request
-import re
 
 from app import store
 from app.models.renter import Renter
