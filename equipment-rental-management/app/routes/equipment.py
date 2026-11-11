@@ -14,6 +14,15 @@ def list_equipment():
 @equipment_bp.route("", methods=["POST"])
 def create_equipment():
     data = request.get_json()
+
+    # check that there's no equipment that already has given name
+    has_unreturned_rental = any(
+        equipment.name.lower() == data["name"].lower()
+        for equipment in store.equipment.values()
+    )
+    if has_unreturned_rental:
+            return jsonify({"error": "Equipment with that name already exists"}), 409
+
     equipment_id = store.next_id("equipment")
     item = Equipment(
         id=equipment_id,
@@ -69,6 +78,14 @@ def update_equipment(equipment_id):
 
 @equipment_bp.route("/<int:equipment_id>", methods=["DELETE"])
 def delete_equipment(equipment_id):
+    # check that equipment is not associated with an unreturned rental
+    has_unreturned_rental = any(
+        rental.equipment_id == equipment_id and rental.return_date is None
+        for rental in store.rentals.values()
+    )
+    if has_unreturned_rental:
+            return jsonify({"error": "Equipment associated with unreturned rental"}), 409
+
     item = store.equipment.pop(equipment_id, None)
     if item is None:
         return jsonify({"error": "Equipment not found"}), 404
