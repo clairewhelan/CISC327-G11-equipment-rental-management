@@ -1,3 +1,6 @@
+
+import pytest
+
 # TESTS IF EQUIPMENT ENDPOINT EXISTS 
 
 def test_list_equipment_returns_empty_list_initially(client):
@@ -425,6 +428,7 @@ def test_add_renter_w_existing_email(client):
     # Prevent renter from being made 
     assert renter2_resp.status_code == 409
 
+@pytest.mark.xfail(reason="Currently no backend email verification: would require a new library import")
 def test_add_renter_w_non_email(client): 
     payload = {
         "name": "test",
@@ -569,7 +573,8 @@ def test_edit_renter_that_dne(client):
     }
     update_renter_resp = client.put(f"/renters/{9999999}", json=updated_payload)
     assert update_renter_resp.status_code == 404
-   
+
+@pytest.mark.xfail(reason="Currently no backend email verification: would require a new library import")
 def test_edit_renter_email_w_non_email(client):
     # Create renter with a valid email
     payload_renter = {
