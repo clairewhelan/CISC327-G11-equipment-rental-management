@@ -6,7 +6,7 @@ from app import store
 from app.models.equipment import Equipment
 from app.models.renter import Renter
 from app.models.rental import Rental
-from notification_service import is_service_available, send_notification, get_notifications
+from notification_service import send_notification
 
 views_bp = Blueprint("views", __name__)
 

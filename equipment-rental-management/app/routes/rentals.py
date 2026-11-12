@@ -4,7 +4,7 @@ from flask import Blueprint, jsonify, request
 
 from app import store
 from app.models.rental import Rental
-from notification_service import is_service_available, send_notification, get_notifications
+from notification_service import send_notification
 
 rentals_bp = Blueprint("rentals", __name__, url_prefix="/rentals")
 
