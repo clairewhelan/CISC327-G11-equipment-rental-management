@@ -22,7 +22,9 @@ def next_id(kind):
 
 def reset():
     """Clear all data. Handy for resetting state between tests."""
+    global deposit_threshold
+    deposit_threshold = 100
     equipment.clear()
     renters.clear()
     rentals.clear()
-    _next_ids.update(equipment=1, renter=1, rental=1, deposit_threshold=100)
+    _next_ids.update(equipment=1, renter=1, rental=1)
