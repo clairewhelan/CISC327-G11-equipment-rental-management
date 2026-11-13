@@ -74,11 +74,11 @@ def checkout_equipment():
     
     notification_state = send_notification(renter.email, subject, message)
     if notification_state == False: 
-        return jsonify({
-            "error": "Rental was created successfully, but the notification failed to send.",
-            "rental": rental.to_dict()
-        }), 500    
-    
+        rental_data = rental.to_dict()
+        rental_data["warning"] = "Rental was created successfully, but notification failed to send"
+        return jsonify(rental_data), 201
+
+
     return jsonify(rental.to_dict()), 201
 
 
