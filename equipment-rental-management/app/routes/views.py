@@ -91,7 +91,8 @@ def rentals_page():
         equipment_id = int(request.form["equipment_id"])
         renter_id = int(request.form["renter_id"])
         item = store.equipment.get(equipment_id)
-        if item is not None:
+        renter = store.renters.get(renter_id)
+        if item is not None and renter is not None:
             item.available_units -= 1
             rental_id = store.next_id("rental")
             rental = Rental(
@@ -101,11 +102,6 @@ def rentals_page():
                 due_date=Rental.default_due_date(),
             )
             store.rentals[rental_id] = rental
-        
-            # Send notification after checkout 
-            renter = store.renters.get(renter_id)
-            if renter is None:
-                return redirect(url_for("views.rentals_page"))
 
             message = f"Thank you for checking out {item.name}. Your scheduled return date is {rental.due_date}. We hope you enjoy the product."    
             subject = "Checkout Confirmation"
