@@ -2,7 +2,129 @@ from app import store
 from unittest.mock import patch
 import pytest
 
-# ----------------------------- Notification View Tests ----------------------------------
+# NOTIFICATION TESTS
+# ----------------------------- View Tests ----------------------------------
+
+def test_checkout_notification_view_failure_stub(client, monkeypatch):
+    """A stub test to confirm that when notification fails, 
+    checkout is still successful but email is not sent"""
+    monkeypatch.setattr(
+        "app.routes.views.send_notification",
+        lambda recipient, subject, message: False
+    )
+    # Create renter
+    renter_payload = {
+        "name": "John",
+        "email": "John@gmail.com"
+    }
+    renter_resp = client.post("/renters", json=renter_payload)
+    assert renter_resp.status_code == 201
+
+    # Create equipment
+    equipment_payload = {
+        "name": "Canoe",
+        "category": "Boat",
+        "total_units": 10,
+        "price": 100
+    }
+    equipment_resp = client.post("/equipment", json=equipment_payload)
+    assert equipment_resp.status_code == 201
+
+    # Get renter and equipment
+    renter = list(store.renters.values())[0]
+    equipment = list(store.equipment.values())[0]
+
+    # Checkout equipment
+    rental_payload = {
+        "equipment_id": equipment.id,
+        "renter_id": renter.id
+    }
+
+    rental_resp = client.post("/ui/rentals", data=rental_payload)
+
+    assert rental_resp.status_code == 302
+    assert len(store.rentals) == 1
+
+def test_invalid_checkout_doesnt_send_notif_view_mock(client):
+    """A mock test to confirm that when checkout fails, 
+        send_notification is not called"""
+
+    with patch("app.routes.views.send_notification", return_value=False) as mock_send:
+        # Checkout equipment
+        rental_payload = {
+            "equipment_id": 1,
+            "renter_id": 1
+        }
+
+        rental_resp = client.post("/ui/rentals", data=rental_payload)
+
+        assert rental_resp.status_code == 302
+
+        assert len(store.rentals) == 0
+        mock_send.assert_not_called()
+
+# ----------------------------- Route Tests ----------------------------------
+
+def test_checkout_notification_failure_stub(client, monkeypatch):
+    """A stub test to confirm that when notification fails, 
+    checkout is still successful but email is not sent"""
+    monkeypatch.setattr(
+        "app.routes.rentals.send_notification",
+        lambda recipient, subject, message: False
+    )
+    # Create renter
+    renter_payload = {
+        "name": "John",
+        "email": "John@gmail.com"
+    }
+    renter_resp = client.post("/renters", json=renter_payload)
+    assert renter_resp.status_code == 201
+
+    # Create equipment
+    equipment_payload = {
+        "name": "Canoe",
+        "category": "Boat",
+        "total_units": 10,
+        "price": 100
+    }
+    equipment_resp = client.post("/equipment", json=equipment_payload)
+    assert equipment_resp.status_code == 201
+
+    # Get renter and equipment
+    renter = list(store.renters.values())[0]
+    equipment = list(store.equipment.values())[0]
+
+    # Checkout equipment
+    rental_payload = {
+        "equipment_id": equipment.id,
+        "renter_id": renter.id
+    }
+
+    rental_resp = client.post("/rentals", json=rental_payload)
+
+    assert rental_resp.status_code == 201
+    assert len(store.rentals) == 1
+    assert "warning" in rental_resp.get_json()
+    assert rental_resp.get_json()["warning"] == "Rental was created successfully, but notification failed to send"
+
+
+def test_invalid_checkout_doesnt_send_notif_mock(client):
+    """A mock test to confirm that when checkout fails, 
+        send_notification is not called"""
+
+    with patch("app.routes.views.send_notification", return_value=False) as mock_send:
+        # Checkout equipment
+        rental_payload = {
+            "equipment_id": 1,
+            "renter_id": 1
+        }
+
+        rental_resp = client.post("/rentals", json=rental_payload)
+        assert rental_resp.status_code == 404
+        assert len(store.rentals) == 0
+
+        mock_send.assert_not_called()
+
 
 # COVERAGE TESTS
 # ----------------------------- Renter Tests ----------------------------------
@@ -334,6 +456,8 @@ def test_equipment_view_get(client):
     assert b"Boat" in get_equipment_resp.data
     assert b"10" in get_equipment_resp.data
     assert b"50.0" in get_equipment_resp.data
+
+# ----------------------------- Home ----------------------------------
 
 def test_home_view_get(client):
     resp = client.get("/")
