@@ -334,3 +334,7 @@ def test_equipment_view_get(client):
     assert b"Boat" in get_equipment_resp.data
     assert b"10" in get_equipment_resp.data
     assert b"50.0" in get_equipment_resp.data
+
+def test_home_view_get(client):
+    resp = client.get("/")
+    assert resp.status_code == 200

@@ -102,11 +102,6 @@ def rentals_page():
                 due_date=Rental.default_due_date(),
             )
             store.rentals[rental_id] = rental
-        
-            # Send notification after checkout 
-            renter = store.renters.get(renter_id)
-            if renter is None:
-                return redirect(url_for("views.rentals_page"))
 
             message = f"Thank you for checking out {item.name}. Your scheduled return date is {rental.due_date}. We hope you enjoy the product."    
             subject = "Checkout Confirmation"

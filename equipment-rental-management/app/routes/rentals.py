@@ -67,12 +67,8 @@ def checkout_equipment():
     # Send notification after checkout 
     message = f"Thank you for checking out {item.name}. Your scheduled return date is {rental.due_date}. We hope you enjoy the product."    
     subject = "Checkout Confirmation"
-    renter = store.renters.get(data["renter_id"])
-
-    if renter is None:
-        return jsonify({"error": "No renter with that id found"}), 404
     
-    notification_state = send_notification(renter.email, subject, message)
+    notification_state = send_notification(renter_item.email, subject, message)
     if notification_state == False: 
         rental_data = rental.to_dict()
         rental_data["warning"] = "Rental was created successfully, but notification failed to send"
