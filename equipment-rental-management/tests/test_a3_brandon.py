@@ -197,7 +197,7 @@ def test_get_equipment_that_dne(client):
     assert availability_resp.status_code == 404
     assert availability_resp.get_json() == {"error": "Equipment not found"}
 
-def test_create_then_update_equipment_with_negative_valuess(client):
+def test_create_then_update_equipment_with_negative_values(client):
     payload = {
         "name": "Canoe",
         "category": "Boat",
@@ -212,11 +212,13 @@ def test_create_then_update_equipment_with_negative_valuess(client):
         "damaged_units": -11,
     }
     update_resp = client.put(f"/equipment/{equipment_id}", json=update_payload)
-    data = equipment_resp.get_json()
     assert update_resp.status_code == 400
 
+    # Get equipment after attempted update 
+    get_resp = client.get(f"/equipment/{equipment_id}")
+
     # Check if data has changed at all. 
-    data = equipment_resp.get_json()
+    data = get_resp.get_json()
     assert data["name"] == "Canoe"
     assert data["category"] == "Boat"
     assert data["damaged_units"] == 0
@@ -257,7 +259,7 @@ def test_edit_equipment_that_dne(client):
     assert update_resp.status_code == 302
     assert update_resp.location.endswith("/ui/equipment")    
 
-def test_equipment_page_create_then_update_equipment_with_negative_valuess(client):
+def test_equipment_page_create_then_update_equipment_with_negative_values(client):
     payload = {
         "name": "Canoe",
         "category": "Boat",
@@ -282,6 +284,8 @@ def test_equipment_page_create_then_update_equipment_with_negative_valuess(clien
     assert item.name == "Canoe"
     assert item.category == "Boat"
     assert item.total_units == 10
+    assert item.available_units == 10
+    assert item.damaged_units == 0
 
 def test_equipment_page_when_there_are_more_damaged_plus_available_units_than_total(client):
     payload = {
@@ -339,7 +343,8 @@ def test_renters_page_create_client(client):
         "name": "John",
         "email": "John@gmail.com"
     }
-    renter_resp = client.post("ui/renters", data=payload)
+    renter_resp = client.post("/ui/renters", data=payload)
+    assert renter_resp.status_code == 302
     assert renter_resp.location.endswith("/ui/renters")
 
     # Verify if renter has been created
@@ -364,7 +369,7 @@ def test_renters_page_get_client(client):
         "name": "John",
         "email": "John@gmail.com"
     }
-    renter_resp = client.post("ui/renters", data=payload)
+    renter_resp = client.post("/ui/renters", data=payload)
     assert renter_resp.location.endswith("/ui/renters")
     assert renter_resp.status_code == 302
 
@@ -374,8 +379,8 @@ def test_renters_page_get_client(client):
     assert b"John" in get_renter_resp.data
     assert b"John@gmail.com" in get_renter_resp.data
 
-def test_renters_page_get_renter_that_dne(client):
-    # See if No invalid clients are taken
+def test_renters_page_get_with_no_renters(client):
+    # verify that now renter is returned. 
     get_renter_resp = client.get("/ui/renters")
     assert get_renter_resp.status_code == 200
     assert b"None" not in get_renter_resp.data
@@ -395,7 +400,7 @@ def test_update_deposit_threshold(client):
 
 # ----------------------------- Deposit Views ----------------------------------
 
-def test_create_and_update_deposite_threshold_views(client):
+def test_create_and_update_deposit_threshold_views(client):
     payload = {
         "price": 250.00
     }
